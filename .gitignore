@@ -1,0 +1,11 @@
+node_modules
+dist
+dist-ssr
+*.local
+.env
+.env.production
+.env.*.local
+.wrangler
+.dev.vars
+instructions.md
+PRD-Temp-Mail-WebApp.md

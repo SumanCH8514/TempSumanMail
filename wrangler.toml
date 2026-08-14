@@ -1,0 +1,7 @@
+name = "temp-suman-mail-api"
+main = "worker/index.js"
+compatibility_date = "2024-09-23"
+
+routes = [
+  { pattern = "backend.tempsumanmail.sumanonline.com", custom_domain = true }
+]
