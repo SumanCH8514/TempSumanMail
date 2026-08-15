@@ -4,6 +4,47 @@ import { useSound } from '../hooks/useSound.js';
 
 const MailContext = createContext();
 
+const sendSystemNotification = async (title, options) => {
+  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+    return;
+  }
+
+  const fullOptions = {
+    ...options,
+    icon: '/icon.svg',
+    badge: '/icon.svg',
+    vibrate: [200, 100, 200],
+    renotify: true,
+    requireInteraction: false
+  };
+
+  if (typeof navigator !== 'undefined' && 'serviceWorker' in navigator) {
+    try {
+      const reg = await navigator.serviceWorker.ready;
+      if (reg) {
+        if (reg.active) {
+          reg.active.postMessage({
+            type: 'SHOW_NOTIFICATION',
+            title,
+            options: fullOptions
+          });
+        }
+        if (typeof reg.showNotification === 'function') {
+          await reg.showNotification(title, fullOptions);
+          return;
+        }
+      }
+    } catch (e) {}
+  }
+
+  try {
+    const notif = new Notification(title, fullOptions);
+    notif.onclick = () => {
+      window.focus();
+    };
+  } catch (e) {}
+};
+
 export function MailProvider({ children }) {
   const [session, setSession] = useState(() => apiClient.getStoredSession());
   const [domains, setDomains] = useState([]);
@@ -29,6 +70,7 @@ export function MailProvider({ children }) {
   const { soundEnabled, toggleSound, playNotificationSound } = useSound();
   const knownMessageIds = useRef(new Set());
   const readMessageIds = useRef(new Set());
+  const isInitialFetch = useRef(true);
   const pollIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
 
@@ -112,30 +154,37 @@ export function MailProvider({ children }) {
       const end = performance.now();
       setLatencyMs(Math.round(end - start));
 
-      let hasNew = false;
-
-      const normalized = fetched.map(msg => {
-        const isRead = Boolean(msg.seen || readMessageIds.current.has(msg.id));
-        if (!knownMessageIds.current.has(msg.id)) {
-          knownMessageIds.current.add(msg.id);
-          hasNew = true;
-        }
-        return {
-          ...msg,
-          seen: isRead
-        };
-      });
+      const normalized = fetched.map(msg => ({
+        ...msg,
+        seen: Boolean(msg.seen || readMessageIds.current.has(msg.id))
+      }));
 
       setMessages(normalized);
 
-      if (hasNew && knownMessageIds.current.size > fetched.length - 1 && fetched.length > 0) {
-        playNotificationSound();
-        addToast('New email received in mailbox', 'success');
-        if (typeof Notification !== 'undefined' && Notification.permission === 'granted') {
-          const latest = fetched[0];
-          new Notification('New Email - TempSumanMail', {
-            body: `${latest.from}: ${latest.subject}`,
-            icon: '/favicon.ico'
+      if (isInitialFetch.current) {
+        isInitialFetch.current = false;
+        fetched.forEach(msg => knownMessageIds.current.add(msg.id));
+      } else {
+        const newEmails = fetched.filter(msg => !knownMessageIds.current.has(msg.id));
+        if (newEmails.length > 0) {
+          newEmails.forEach(msg => knownMessageIds.current.add(msg.id));
+          playNotificationSound();
+          try {
+            if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+              navigator.vibrate([200, 100, 200]);
+            }
+          } catch (e) {}
+          addToast('New email received in mailbox', 'success');
+          const latest = newEmails[0];
+          const sender = latest.fromName || latest.fromAddress || latest.from || 'New Sender';
+          const subject = latest.subject || '(No Subject)';
+          const snippet = latest.snippet || latest.intro || '';
+          sendSystemNotification(subject, {
+            body: `From: ${sender}\n${snippet ? snippet.slice(0, 85) : 'Click to view in TempSumanMail'}`,
+            icon: '/icon.svg',
+            badge: '/icon.svg',
+            tag: `tempsumanmail-${latest.id}`,
+            renotify: true
           });
         }
       }
@@ -158,6 +207,7 @@ export function MailProvider({ children }) {
     setError(null);
     setSelectedMessage(null);
     setMessages([]);
+    isInitialFetch.current = true;
     knownMessageIds.current.clear();
     readMessageIds.current.clear();
 
@@ -181,6 +231,7 @@ export function MailProvider({ children }) {
     setError(null);
     setSelectedMessage(null);
     setMessages([]);
+    isInitialFetch.current = true;
     knownMessageIds.current.clear();
     readMessageIds.current.clear();
 
@@ -267,6 +318,28 @@ export function MailProvider({ children }) {
     } else {
       loadReadIdsForSession(session.token);
     }
+
+    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+      try {
+        Notification.requestPermission().catch(() => {});
+      } catch (e) {}
+    }
+
+    const autoPrompt = () => {
+      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
+        try {
+          Notification.requestPermission().catch(() => {});
+        } catch (e) {}
+      }
+    };
+
+    window.addEventListener('touchstart', autoPrompt, { once: true, passive: true });
+    window.addEventListener('click', autoPrompt, { once: true, passive: true });
+
+    return () => {
+      window.removeEventListener('touchstart', autoPrompt);
+      window.removeEventListener('click', autoPrompt);
+    };
   }, []);
 
   useEffect(() => {
@@ -285,9 +358,7 @@ export function MailProvider({ children }) {
     }, 1000);
 
     pollIntervalRef.current = setInterval(() => {
-      if (document.visibilityState === 'visible') {
-        fetchMessages(false);
-      }
+      fetchMessages(false);
     }, 10000);
 
     const handleVisibilityChange = () => {

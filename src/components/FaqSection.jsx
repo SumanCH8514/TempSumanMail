@@ -1,10 +1,11 @@
 import React, { useState } from 'react';
-import { ChevronDown, ChevronUp, Shield, Clock, Zap, Lock, Terminal, HelpCircle } from 'lucide-react';
+import { ChevronDown, ChevronUp } from 'lucide-react';
 
 export function FaqSection() {
   const [openIndex, setOpenIndex] = useState(null);
 
   const faqs = [
+
     {
       q: 'How does TempSumanMail protect privacy without requiring an account?',
       a: 'We operate as a lightweight edge proxy over global disposable email networks. Mailboxes are created on-demand without collecting passwords, IPs, or cookies. When you close or destroy your session, your tokens are expunged.'
@@ -24,7 +25,24 @@ export function FaqSection() {
     {
       q: 'Is this service free to use for QA, development, and OTP verification?',
       a: '100% free and open for testing verification flows, software QA, signing up for newsletters without spam, and temporary developer pipelines.'
-    }
+    },
+    {
+      q: 'Who created this project and what tech stack has been used?',
+      a: (
+        <span>
+          TempSumanMail was designed and developed by{' '}
+          <a
+            href="https://sumanonline.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            style={{ color: 'var(--accent-cyan)', fontWeight: 600, textDecoration: 'none' }}
+          >
+            Suman Chakrabortty (SumanOnline.Com)
+          </a>
+          . It is engineered as a modern, robust & high-performance web app, Stacks using React, Vite, and a distributed Cloudflare Backend edge architecture using AES-GCM stateless token encryption and real-time disposable email broker APIs.
+        </span>
+      )
+    },
   ];
 
   const toggleFaq = (index) => {
@@ -55,7 +73,7 @@ export function FaqSection() {
               </button>
               {isOpen && (
                 <div className="faq-accordion-body anim-fade-in">
-                  <p>{item.a}</p>
+                  <div>{item.a}</div>
                 </div>
               )}
             </div>

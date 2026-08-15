@@ -1,18 +1,19 @@
 import React, { useState } from 'react';
-import { ArrowLeft, Trash2, Download, Paperclip, ShieldCheck, Code, FileText, Globe, Printer, Copy, Check } from 'lucide-react';
+import { ArrowLeft, Trash2, Download, Paperclip, Code, FileText, Globe, Printer, Copy, Check, Star } from 'lucide-react';
 import { useMail } from '../context/MailContext.jsx';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { formatRelativeTime, formatFileSize, getInitials } from '../utils/formatters.js';
 import { sanitizeHtml, buildIframeSrcDoc } from '../utils/sanitizer.js';
 
 export function MessageViewer({ message, onBack }) {
-  const { deleteMessage, addToast } = useMail();
+  const { deleteMessage, addToast, starredIds, toggleStar } = useMail();
   const { theme } = useTheme();
   const [activeTab, setActiveTab] = useState('html');
   const [copiedRaw, setCopiedRaw] = useState(false);
 
   if (!message) return null;
 
+  const isStarred = starredIds.includes(message.id);
   const initials = getInitials(message.fromName, message.fromAddress);
   const timeFormatted = formatRelativeTime(message.receivedAt);
   const sanitized = sanitizeHtml(message.html);
@@ -21,6 +22,16 @@ export function MessageViewer({ message, onBack }) {
   const handleDelete = () => {
     deleteMessage(message.id);
     onBack();
+  };
+
+  const copyAddress = async (addr, label = 'Address') => {
+    if (!addr) return;
+    try {
+      await navigator.clipboard.writeText(addr);
+      addToast(`${label} copied to clipboard`, 'success');
+    } catch (e) {
+      addToast('Failed to copy address', 'error');
+    }
   };
 
   const handleCopyRaw = async () => {
@@ -67,21 +78,39 @@ export function MessageViewer({ message, onBack }) {
     }
   };
 
+  const fromEmail = message.fromAddress || message.from;
+  const toDisplay = message.to ? (message.to.includes('@') ? message.to.split('@')[0] : message.to) : 'me';
+
   return (
     <div className="reader-container anim-fade-in">
       <div className="reader-top-bar">
         <button
-          className="action-btn"
+          className="reader-back-btn"
           onClick={onBack}
-          style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}
           title="Back to inbox (Esc)"
+          aria-label="Back to inbox"
         >
-          <ArrowLeft size={15} />
-          <span>Back to Messages</span>
-          <kbd className="action-kbd">Esc</kbd>
+          <div className="reader-back-icon-box">
+            <ArrowLeft size={15} strokeWidth={2.4} />
+          </div>
+          <span className="reader-back-text">Back</span>
+          <kbd className="reader-back-kbd">Esc</kbd>
         </button>
 
         <div className="reader-actions-group">
+          <button
+            className={`icon-btn ${isStarred ? 'starred-btn' : ''}`}
+            onClick={() => toggleStar(message.id)}
+            title={isStarred ? 'Unstar message' : 'Star message'}
+            aria-label="Star email"
+          >
+            <Star
+              size={15}
+              fill={isStarred ? 'var(--accent-amber)' : 'none'}
+              color={isStarred ? 'var(--accent-amber)' : 'currentColor'}
+            />
+          </button>
+
           <button
             className="icon-btn"
             onClick={handleCopyRaw}
@@ -110,42 +139,48 @@ export function MessageViewer({ message, onBack }) {
           </button>
 
           <button
-            className="action-btn danger"
+            className="icon-btn danger-icon-btn"
             onClick={handleDelete}
             title="Delete this message"
+            aria-label="Delete email"
           >
             <Trash2 size={15} />
-            <span>Delete</span>
           </button>
         </div>
       </div>
 
       <div className="reader-meta-header">
-        <div style={{ display: 'flex', alignItems: 'flex-start', justifyContent: 'space-between', gap: '1rem' }}>
-          <h2 className="reader-subject">{message.subject || '(No Subject)'}</h2>
-          <div className="security-pill" title="Rendered safely in a sandboxed container">
-            <ShieldCheck size={14} />
-            <span>Sanitized &amp; Isolated</span>
-          </div>
-        </div>
+        <h2 className="reader-subject">{message.subject || '(No Subject)'}</h2>
 
-        <div className="reader-sender-info">
-          <div className="reader-avatar-row">
-            <div className="sender-avatar">
-              {initials}
-            </div>
-            <div>
-              <div style={{ fontWeight: 600, color: 'var(--text-primary)', fontSize: '0.95rem' }}>
-                {message.fromName || message.from}
-              </div>
-              <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)', fontFamily: 'var(--font-mono)' }}>
-                {message.fromAddress ? `<${message.fromAddress}>` : ''} &bull; To: {message.to || 'Your Inbox'}
-              </div>
-            </div>
+        <div className="reader-sender-card">
+          <div className="sender-avatar">
+            {initials}
           </div>
 
-          <div style={{ fontSize: '0.8rem', color: 'var(--text-muted)' }}>
-            {new Date(message.receivedAt).toLocaleString()} ({timeFormatted})
+          <div className="reader-sender-details">
+            <div className="reader-sender-name-row">
+              <span className="reader-from-name">{message.fromName || message.from}</span>
+              <span className="reader-time-badge">{timeFormatted}</span>
+            </div>
+
+            <div className="reader-address-row">
+              <button
+                type="button"
+                className="reader-addr-btn"
+                onClick={() => copyAddress(fromEmail, 'Sender address')}
+                title="Click to copy sender address"
+              >
+                {fromEmail}
+              </button>
+              <button
+                type="button"
+                className="reader-to-chip"
+                onClick={() => copyAddress(message.to, 'Recipient address')}
+                title={`Click to copy: ${message.to || 'Your address'}`}
+              >
+                to {toDisplay}
+              </button>
+            </div>
           </div>
         </div>
       </div>
@@ -155,25 +190,22 @@ export function MessageViewer({ message, onBack }) {
           className={`tab-btn ${activeTab === 'html' ? 'active' : ''}`}
           onClick={() => setActiveTab('html')}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Globe size={14} /> Formatted HTML
-          </span>
+          <Globe size={14} />
+          <span>HTML</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'text' ? 'active' : ''}`}
           onClick={() => setActiveTab('text')}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            <FileText size={14} /> Plain Text
-          </span>
+          <FileText size={14} />
+          <span>Plain Text</span>
         </button>
         <button
           className={`tab-btn ${activeTab === 'raw' ? 'active' : ''}`}
           onClick={() => setActiveTab('raw')}
         >
-          <span style={{ display: 'inline-flex', alignItems: 'center', gap: '0.35rem' }}>
-            <Code size={14} /> Raw Payload
-          </span>
+          <Code size={14} />
+          <span>Raw Source</span>
         </button>
       </div>
 

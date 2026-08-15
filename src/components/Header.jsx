@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { Mail, Sun, Moon, Volume2, VolumeX, Bell, Keyboard, Activity } from 'lucide-react';
+import { Mail, Sun, Moon, Volume2, VolumeX, Bell, Keyboard } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useMail } from '../context/MailContext.jsx';
 import { ShortcutsModal } from './ShortcutsModal.jsx';
@@ -35,12 +35,17 @@ export function Header() {
       <div className="header-inner">
         <div className="brand-wrapper">
           <div className="brand-icon">
-            <Mail size={20} strokeWidth={2.4} />
+            <Mail size={18} strokeWidth={2.5} />
           </div>
-          <div style={{ display: 'flex', flexDirection: 'column' }}>
-            <h1 className="brand-title">TempSumanMail</h1>
-            <span style={{ fontSize: '0.68rem', color: 'var(--text-muted)', fontWeight: 600, letterSpacing: '0.04em', textTransform: 'uppercase' }}>
-              Pro Disposable Mail
+          <div className="brand-text-col">
+            <div className="brand-title-row">
+              <h1 className="brand-title">
+                TempSumanMail
+              </h1>
+              <span className="brand-pro-tag">PRO</span>
+            </div>
+            <span className="brand-subtitle">
+              Disposable Anonymous Mail
             </span>
           </div>
         </div>
@@ -48,12 +53,12 @@ export function Header() {
         <div className="header-actions">
           <div className="provider-badge" title={`Connected via ${currentProvider} edge cluster`}>
             <span className="status-dot"></span>
-            <span style={{ textTransform: 'capitalize' }}>{currentProvider}</span>
-            <span style={{ color: 'var(--text-muted)', fontSize: '0.7rem' }}>&bull; {latencyMs}ms</span>
+            <span className="provider-name">{currentProvider}</span>
+            <span className="provider-latency">&bull; {latencyMs}ms</span>
           </div>
 
           <button
-            className="icon-btn"
+            className="icon-btn header-btn-shortcuts"
             onClick={() => setShortcutsOpen(true)}
             title="Keyboard shortcuts (?)"
             aria-label="Keyboard shortcuts"

@@ -36,7 +36,17 @@ function AppContent() {
         try {
           await navigator.clipboard.writeText(session.address);
           addToast('Address copied to clipboard', 'success');
-        } catch (e) {}
+        } catch (e) {
+          addToast('Failed to copy address', 'error');
+        }
+      }
+    },
+    onCustomize: () => {
+      setCustomModalOpen(true);
+    },
+    onQr: () => {
+      if (session?.address) {
+        setQrModalOpen(true);
       }
     },
     onRefresh: () => {
@@ -46,6 +56,12 @@ function AppContent() {
     onNew: () => {
       createRandomInbox();
       addToast('Generating new inbox...', 'info');
+    },
+    onSearch: () => {
+      const searchInput = document.querySelector('.search-input');
+      if (searchInput) {
+        searchInput.focus();
+      }
     },
     onEscape: () => {
       if (selectedMessage) {
@@ -70,10 +86,13 @@ function AppContent() {
           </h1>
 
           <p className="hero-subtitle">
-            Instant anonymous inboxes for OTP verification, QA testing, and spam prevention. Zero registration, zero tracking.
+            Instant anonymous inboxes for OTP verification, QA testing, and spam prevention. Zero registration, zero tracking. A <a href="https://sumanonline.com" target="_blank" style={{ fontWeight: 'bold', textDecoration: 'none', cursor: 'pointer' }} rel="noopener noreferrer">SumanOnline</a> Project.
           </p>
 
-          <AddressBar />
+          <AddressBar
+            onOpenCustomize={() => setCustomModalOpen(true)}
+            onOpenQr={() => setQrModalOpen(true)}
+          />
         </section>
 
         <MessageList />

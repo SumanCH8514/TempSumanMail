@@ -5,10 +5,10 @@ export function Footer({ onOpenAbout, onOpenPrivacy, onOpenTerms }) {
   return (
     <footer className="site-footer">
       <div className="footer-inner">
-        <div className="footer-brand-section">
+        <div className="footer-main-row">
           <div className="footer-brand-title">
-            <ShieldCheck size={16} style={{ color: 'var(--accent-cyan)' }} />
-            <span>TempSumanMail &copy; {new Date().getFullYear()} &mdash; Anonymous Disposable Mail Broker</span>
+            <span>&copy; {new Date().getFullYear()} <b>TempSumanMail</b></span>
+            <ShieldCheck size={16} className="footer-shield-icon" />
           </div>
 
           <nav className="footer-nav-links" aria-label="Footer Navigation">
@@ -26,18 +26,18 @@ export function Footer({ onOpenAbout, onOpenPrivacy, onOpenTerms }) {
           </nav>
         </div>
 
-        <div className="footer-bottom-row">
-          <div className="footer-credit">
-            <span>Designed &amp; Developed with &#10084;&#65039; for Pro Users by</span>
-            <a
-              href="https://sumanonline.com"
-              target="_blank"
-              rel="noopener noreferrer"
-              className="footer-credit-link"
-            >
-              SumanOnline.Com
-            </a>
-          </div>
+        <div className="footer-bottom-divider"></div>
+
+        <div className="footer-credit">
+          <span>Designed &amp; Developed with &#10084;&#65039; by</span>
+          <a
+            href="https://sumanonline.com"
+            target="_blank"
+            rel="noopener noreferrer"
+            className="footer-credit-link"
+          >
+            SumanOnline.Com
+          </a>
         </div>
       </div>
     </footer>

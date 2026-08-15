@@ -1,10 +1,8 @@
 import React, { useState } from 'react';
 import { Copy, Check, RefreshCw, UserCheck, QrCode, Trash2, ShieldCheck } from 'lucide-react';
 import { useMail } from '../context/MailContext.jsx';
-import { CustomAddressModal } from './CustomAddressModal.jsx';
-import { QrCodeModal } from './QrCodeModal.jsx';
 
-export function AddressBar() {
+export function AddressBar({ onOpenCustomize, onOpenQr }) {
   const {
     session,
     loading,
@@ -17,8 +15,6 @@ export function AddressBar() {
   } = useMail();
 
   const [copied, setCopied] = useState(false);
-  const [customModalOpen, setCustomModalOpen] = useState(false);
-  const [qrModalOpen, setQrModalOpen] = useState(false);
 
   const handleCopy = async () => {
     if (!session?.address) return;
@@ -64,7 +60,7 @@ export function AddressBar() {
         <div className="actions-cluster">
           <button
             className="action-btn"
-            onClick={() => setCustomModalOpen(true)}
+            onClick={onOpenCustomize}
             disabled={loading}
             title="Choose custom username (U)"
           >
@@ -86,7 +82,7 @@ export function AddressBar() {
 
           <button
             className="action-btn"
-            onClick={() => setQrModalOpen(true)}
+            onClick={onOpenQr}
             disabled={!session?.address}
             title="Scan QR on mobile (Q)"
           >
@@ -148,16 +144,6 @@ export function AddressBar() {
           </div>
         </div>
       </div>
-
-      <CustomAddressModal
-        isOpen={customModalOpen}
-        onClose={() => setCustomModalOpen(false)}
-      />
-
-      <QrCodeModal
-        isOpen={qrModalOpen}
-        onClose={() => setQrModalOpen(false)}
-      />
     </div>
   );
 }
