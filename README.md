@@ -95,7 +95,7 @@ TempSumanMail/
 
 1. **Clone the repository:**
    ```bash
-   git clone https://github.com/your-username/TempSumanMail.git
+   git clone https://github.com/SumanCH8514/TempSumanMail.git
    cd TempSumanMail
    ```
 
