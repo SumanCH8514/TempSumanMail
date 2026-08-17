@@ -1,32 +1,13 @@
 import React, { useState } from 'react';
-import { Mail, Sun, Moon, Volume2, VolumeX, Bell, Keyboard } from 'lucide-react';
+import { Mail, Sun, Moon, Volume2, VolumeX, Bell, BellOff, Keyboard } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useMail } from '../context/MailContext.jsx';
 import { ShortcutsModal } from './ShortcutsModal.jsx';
 
 export function Header() {
   const { theme, toggleTheme } = useTheme();
-  const { soundEnabled, toggleSound, session, latencyMs, addToast } = useMail();
+  const { soundEnabled, toggleSound, notificationsEnabled, toggleNotifications, session, latencyMs } = useMail();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
-  const [notifGranted, setNotifGranted] = useState(() => {
-    return typeof Notification !== 'undefined' && Notification.permission === 'granted';
-  });
-
-  const requestNotificationPermission = async () => {
-    if (typeof Notification === 'undefined') {
-      addToast('Notifications not supported in this browser', 'error');
-      return;
-    }
-    try {
-      const perm = await Notification.requestPermission();
-      if (perm === 'granted') {
-        setNotifGranted(true);
-        addToast('Desktop alerts activated', 'success');
-      } else {
-        addToast('Notification permission denied', 'info');
-      }
-    } catch (e) {}
-  };
 
   const currentProvider = session?.provider || 'mailtm';
 
@@ -76,12 +57,12 @@ export function Header() {
           </button>
 
           <button
-            className={`icon-btn ${notifGranted ? 'active' : ''}`}
-            onClick={requestNotificationPermission}
-            title={notifGranted ? 'Desktop notifications active' : 'Enable desktop notifications'}
-            aria-label="Enable Notifications"
+            className={`icon-btn ${notificationsEnabled ? 'active' : ''}`}
+            onClick={toggleNotifications}
+            title={notificationsEnabled ? 'Disable notifications' : 'Enable notifications'}
+            aria-label="Toggle Notifications"
           >
-            <Bell size={17} />
+            {notificationsEnabled ? <Bell size={17} /> : <BellOff size={17} />}
           </button>
 
           <button

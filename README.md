@@ -5,7 +5,15 @@
 [![React](https://img.shields.io/badge/React-18.3-61DAFB?style=flat-square&logo=react&logoColor=black)](https://reactjs.org/)
 [![Vite](https://img.shields.io/badge/Vite-6.0-646CFF?style=flat-square&logo=vite&logoColor=white)](https://vitejs.dev/)
 [![Cloudflare Workers](https://img.shields.io/badge/Cloudflare-Workers-F38020?style=flat-square&logo=cloudflare&logoColor=white)](https://workers.cloudflare.com/)
+[![Cloudflare Pages](https://img.shields.io/badge/Cloudflare-Pages-F38020?style=flat-square&logo=cloudflarepages&logoColor=white)](https://pages.cloudflare.com/)
 [![License](https://img.shields.io/badge/License-MIT-blue.svg?style=flat-square)](LICENSE)
+
+---
+
+## Live Deployments
+
+- **Web Application**: [https://tempsumanmail.sumanonline.com](https://tempsumanmail.sumanonline.com)
+- **API Gateway Engine**: [https://backend.tempsumanmail.sumanonline.com](https://backend.tempsumanmail.sumanonline.com)
 
 ---
 
@@ -20,14 +28,16 @@ Built as an edge-brokered aggregator over upstream disposable providers (`mail.t
 ## Features
 
 - **Instant Address Generation** &mdash; Provision receivable inboxes in under 2 seconds on initial page load.
-- **Custom Local-Part & Domains** &mdash; Pick a custom username (e.g., `sumanmail`, `alex.dev`) and select from live edge domains.
-- **Real-Time Polling & Notifications** &mdash; Automated background polling with subtle Web Audio alerts and native browser notifications.
+- **Custom Local-Part & Domains** &mdash; Pick a custom username (e.g., `sumanmail`, `user+1`) and select from live edge domains.
+- **Sub-Addressing / Plus Tagging** &mdash; Full support for `+` aliases (e.g., `tester+otp1@domain.com`).
+- **Real-Time Polling & Notifications** &mdash; Automated background polling with Web Audio alerts, haptic vibrations, and Service Worker push notifications that trigger even when minimized.
+- **Toggleable Alerts** &mdash; Independent Header toggles for Sound alerts and System push notifications with real-time state sync.
 - **Safe Sandboxed HTML Viewer** &mdash; Renders complex HTML emails securely with DOMPurify sanitization and remote image protection.
-- **Multi-Provider Failover** &mdash; Automatic fallback across multiple upstream providers with built-in circuit breaking.
-- **Power-User Keyboard Shortcuts** &mdash; Copy (`C`), Refresh (`R`), Randomize (`N`), Customize (`U`), QR Code (`Q`), and Search (`/`).
+- **Multi-Provider Direct Routing & Failover** &mdash; Intelligent domain routing across `mail.tm`, `mail.gw`, and `Guerrilla Mail` with automated circuit breaking.
+- **Power-User Keyboard Shortcuts** &mdash; Copy (`C`), Refresh (`R`), Randomize (`N`), Customize (`U`), QR Code (`Q`), Search (`/`), and Back/Close (`Esc`).
 - **QR Code Sharing** &mdash; Instant QR code generation to test email flows across mobile devices.
 - **Zero Logging & Ephemeral Lifecycle** &mdash; No tracking cookies, no personal identity collection, and automatic session cleanup.
-- **Dark / Light Theme** &mdash; System-aware high-contrast themes crafted with bespoke typography.
+- **Light / Dark Theme** &mdash; Light Mode default with high-contrast Dark Mode toggle and dynamic mobile status bar synchronization.
 
 ---
 
@@ -48,13 +58,13 @@ Built as an edge-brokered aggregator over upstream disposable providers (`mail.t
 TempSumanMail/
 ├── worker/                     # Cloudflare Workers Edge Broker
 │   ├── index.js                # Worker entrypoint
-│   ├── router.js               # REST API route handlers
+│   ├── router.js               # REST API route handlers & HTML Gateway
 │   ├── sessionStore.js         # Opaque session token mapping (KV/Memory)
 │   └── providers/              # Upstream mail adapters
 │       ├── base.js             # Base provider interface
 │       ├── mailtm.js           # Mail.tm integration
 │       ├── mailgw.js           # Mail.gw failover adapter
-│       ├── guerrilla.js        # Guerrilla Mail fallback
+│       ├── guerrilla.js        # Guerrilla Mail adapter
 │       └── manager.js          # Multi-provider manager & circuit breaker
 ├── src/                        # Frontend React Application
 │   ├── api/                    # API client wrapper
@@ -72,13 +82,14 @@ TempSumanMail/
 │   │   ├── FaqSection.jsx      # Interactive accordion FAQ
 │   │   └── Header.jsx / Footer.jsx
 │   ├── context/                # Theme and Mail global state providers
-│   ├── hooks/                  # Polling, Sound, and Shortcut hooks
+│   ├── hooks/                  # Sound, and Keyboard Shortcut hooks
 │   ├── styles/                 # CSS design tokens & animations
 │   ├── utils/                  # Sanitizer & relative time formatters
 │   ├── App.jsx                 # Master application layout
 │   └── main.jsx                # React root mount
+├── public/                     # Static assets, PWA manifest, service worker & icons
 ├── package.json
-├── vite.config.js              # Vite configuration with embedded dev API middleware
+├── vite.config.js              # Vite configuration
 └── wrangler.toml               # Cloudflare deployment configuration
 ```
 
@@ -125,18 +136,6 @@ TempSumanMail/
 | <kbd>Q</kbd> | Open QR code modal for mobile testing |
 | <kbd>/</kbd> | Focus the inbox search bar |
 | <kbd>Esc</kbd> | Close active modal or exit email reader view |
-
----
-
-## Contributing
-
-Contributions, issues, and feature requests are welcome!
-
-1. Fork the repository
-2. Create your feature branch (`git checkout -b feature/AmazingFeature`)
-3. Commit your changes (`git commit -m 'Add some AmazingFeature'`)
-4. Push to the branch (`git push origin feature/AmazingFeature`)
-5. Open a Pull Request
 
 ---
 

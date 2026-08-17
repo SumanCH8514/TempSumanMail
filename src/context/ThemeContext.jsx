@@ -7,20 +7,23 @@ export function ThemeProvider({ children }) {
     try {
       const saved = localStorage.getItem('tempsumanmail_theme');
       if (saved) return saved;
-      return window.matchMedia('(prefers-color-scheme: light)').matches ? 'light' : 'dark';
+      return 'light';
     } catch (e) {
-      return 'dark';
+      return 'light';
     }
   });
 
   useEffect(() => {
     const root = document.documentElement;
+    const metaTheme = document.querySelector('meta[name="theme-color"]');
     if (theme === 'dark') {
       root.classList.add('dark');
       root.classList.remove('light');
+      if (metaTheme) metaTheme.setAttribute('content', '#090d16');
     } else {
       root.classList.add('light');
       root.classList.remove('dark');
+      if (metaTheme) metaTheme.setAttribute('content', '#f8fafc');
     }
     try {
       localStorage.setItem('tempsumanmail_theme', theme);

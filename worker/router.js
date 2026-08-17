@@ -246,7 +246,7 @@ function renderHtmlGateway() {
       </div>
       <div class="spec-item">
         <div class="spec-label">Infrastructure</div>
-        <div class="spec-val">Cloudflare Workers</div>
+        <div class="spec-val">Cloudflare Workers Pro</div>
       </div>
       <div class="spec-item">
         <div class="spec-label">Provider Network</div>
@@ -327,7 +327,7 @@ export async function handleRequest(request, env) {
       let body = {};
       try {
         body = await request.json();
-      } catch (e) {}
+      } catch (e) { }
 
       const { preferredDomain, preferredProvider } = body;
       const inbox = await providerManager.createInbox(null, preferredDomain, preferredProvider);
@@ -477,7 +477,7 @@ export async function handleRequest(request, env) {
       let session;
       try {
         session = await store.getSession(token);
-      } catch (e) {}
+      } catch (e) { }
 
       if (session && session.credentials) {
         try {
@@ -485,7 +485,7 @@ export async function handleRequest(request, env) {
           if (provider) {
             await provider.deleteInbox(session.credentials);
           }
-        } catch (e) {}
+        } catch (e) { }
         await store.deleteSession(token);
       }
 

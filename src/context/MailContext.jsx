@@ -4,8 +4,8 @@ import { useSound } from '../hooks/useSound.js';
 
 const MailContext = createContext();
 
-const sendSystemNotification = async (title, options) => {
-  if (typeof Notification === 'undefined' || Notification.permission !== 'granted') {
+const sendSystemNotification = async (title, options, isEnabled = true) => {
+  if (!isEnabled || typeof Notification === 'undefined' || Notification.permission !== 'granted') {
     return;
   }
 
@@ -68,11 +68,62 @@ export function MailProvider({ children }) {
   const [latencyMs, setLatencyMs] = useState(28);
 
   const { soundEnabled, toggleSound, playNotificationSound } = useSound();
+  const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
+    try {
+      const stored = localStorage.getItem('tempsumanmail_notif_enabled');
+      if (stored !== null) return stored === 'true';
+      return typeof Notification !== 'undefined' && Notification.permission === 'granted';
+    } catch (e) {
+      return false;
+    }
+  });
+
   const knownMessageIds = useRef(new Set());
   const readMessageIds = useRef(new Set());
   const isInitialFetch = useRef(true);
   const pollIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
+
+  const toggleNotifications = useCallback(async () => {
+    if (typeof Notification === 'undefined') {
+      addToast('Notifications not supported in this browser', 'error');
+      return;
+    }
+
+    if (Notification.permission === 'denied') {
+      addToast('Notifications blocked in browser settings', 'error');
+      return;
+    }
+
+    if (Notification.permission === 'default') {
+      try {
+        const perm = await Notification.requestPermission();
+        if (perm === 'granted') {
+          setNotificationsEnabled(true);
+          try {
+            localStorage.setItem('tempsumanmail_notif_enabled', 'true');
+          } catch (e) {}
+          addToast('Desktop & Mobile alerts activated', 'success');
+        } else {
+          setNotificationsEnabled(false);
+          try {
+            localStorage.setItem('tempsumanmail_notif_enabled', 'false');
+          } catch (e) {}
+          addToast('Notification permission denied', 'info');
+        }
+      } catch (e) {}
+      return;
+    }
+
+    setNotificationsEnabled(prev => {
+      const next = !prev;
+      try {
+        localStorage.setItem('tempsumanmail_notif_enabled', String(next));
+      } catch (e) {}
+      addToast(next ? 'Notifications enabled' : 'Notifications muted', 'info');
+      return next;
+    });
+  }, [addToast]);
 
   const loadReadIdsForSession = useCallback((token) => {
     if (!token) {
@@ -191,7 +242,7 @@ export function MailProvider({ children }) {
             badge: '/icon.svg',
             tag: `tempsumanmail-${latest.id}`,
             renotify: true
-          });
+          }, notificationsEnabled);
         }
       }
     } catch (err) {
@@ -206,7 +257,7 @@ export function MailProvider({ children }) {
       if (isManual) setRefreshing(false);
       setPollCountdown(10);
     }
-  }, [session, playNotificationSound, addToast]);
+  }, [session, playNotificationSound, addToast, notificationsEnabled]);
 
   const createRandomInbox = useCallback(async (preferredDomain = null, preferredProvider = null) => {
     setLoading(true);
@@ -325,18 +376,34 @@ export function MailProvider({ children }) {
       loadReadIdsForSession(session.token);
     }
 
-    if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-      try {
-        Notification.requestPermission().catch(() => {});
-      } catch (e) {}
-    }
+    const checkAndSyncPerm = async () => {
+      if (typeof Notification !== 'undefined') {
+        if (Notification.permission === 'granted') {
+          const stored = localStorage.getItem('tempsumanmail_notif_enabled');
+          if (stored === null) {
+            setNotificationsEnabled(true);
+            try {
+              localStorage.setItem('tempsumanmail_notif_enabled', 'true');
+            } catch (e) {}
+          }
+        } else if (Notification.permission === 'default') {
+          try {
+            const perm = await Notification.requestPermission();
+            if (perm === 'granted') {
+              setNotificationsEnabled(true);
+              try {
+                localStorage.setItem('tempsumanmail_notif_enabled', 'true');
+              } catch (e) {}
+            }
+          } catch (e) {}
+        }
+      }
+    };
+
+    checkAndSyncPerm();
 
     const autoPrompt = () => {
-      if (typeof Notification !== 'undefined' && Notification.permission === 'default') {
-        try {
-          Notification.requestPermission().catch(() => {});
-        } catch (e) {}
-      }
+      checkAndSyncPerm();
     };
 
     window.addEventListener('touchstart', autoPrompt, { once: true, passive: true });
@@ -397,9 +464,11 @@ export function MailProvider({ children }) {
         toasts,
         pollCountdown,
         soundEnabled,
+        notificationsEnabled,
         healthStatus,
         latencyMs,
         toggleSound,
+        toggleNotifications,
         toggleStar,
         addToast,
         removeToast,
