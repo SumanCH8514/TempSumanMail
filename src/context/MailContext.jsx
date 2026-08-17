@@ -262,7 +262,22 @@ export function MailProvider({ children }) {
           ...msg,
           seen: Boolean(msg.seen || readMessageIds.current.has(msg.id))
         }))
-        .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
+        .sort((a, b) => {
+          const isAWelcome = a.id === '1' || a.fromAddress?.includes('no-reply@guerrillamail.com');
+          const isBWelcome = b.id === '1' || b.fromAddress?.includes('no-reply@guerrillamail.com');
+          if (isAWelcome && !isBWelcome) return 1;
+          if (!isAWelcome && isBWelcome) return -1;
+
+          const diff = new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+          if (diff !== 0) return diff;
+
+          const numA = Number(a.id);
+          const numB = Number(b.id);
+          if (!isNaN(numA) && !isNaN(numB)) {
+            return numB - numA;
+          }
+          return 0;
+        });
 
       setMessages(normalized);
 

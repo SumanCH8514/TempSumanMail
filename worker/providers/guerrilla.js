@@ -73,18 +73,39 @@ export class GuerrillaProvider extends BaseProvider {
     const data = await res.json();
     const list = data.list || [];
 
-    return list.map(item => ({
-      id: String(item.mail_id),
-      from: item.mail_from || 'Unknown',
-      fromAddress: (item.mail_from || '').match(/<([^>]+)>/)?.[1] || item.mail_from || '',
-      fromName: (item.mail_from || '').replace(/<[^>]+>/, '').trim() || item.mail_from || '',
-      subject: item.mail_subject || '(No Subject)',
-      snippet: item.mail_excerpt || '',
-      receivedAt: item.mail_timestamp ? new Date(parseInt(item.mail_timestamp, 10) * 1000).toISOString() : new Date().toISOString(),
-      seen: Boolean(item.mail_read === '1' || item.mail_read === 1),
-      hasAttachments: Boolean(item.atts && item.atts.length > 0),
-      size: item.mail_size ? parseInt(item.mail_size, 10) : 0
-    })).sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
+    return list.map(item => {
+      const isWelcome = String(item.mail_id) === '1' || item.mail_from?.includes('no-reply@guerrillamail.com');
+      const baseTime = item.mail_timestamp ? parseInt(item.mail_timestamp, 10) * 1000 : Date.now();
+      const receivedAt = isWelcome ? new Date(baseTime - 86400000).toISOString() : new Date(baseTime).toISOString();
+
+      return {
+        id: String(item.mail_id),
+        from: item.mail_from || 'Unknown',
+        fromAddress: (item.mail_from || '').match(/<([^>]+)>/)?.[1] || item.mail_from || '',
+        fromName: (item.mail_from || '').replace(/<[^>]+>/, '').trim() || item.mail_from || '',
+        subject: item.mail_subject || '(No Subject)',
+        snippet: item.mail_excerpt || '',
+        receivedAt,
+        seen: Boolean(item.mail_read === '1' || item.mail_read === 1),
+        hasAttachments: Boolean(item.atts && item.atts.length > 0),
+        size: item.mail_size ? parseInt(item.mail_size, 10) : 0
+      };
+    }).sort((a, b) => {
+      const isAWelcome = a.id === '1' || a.fromAddress === 'no-reply@guerrillamail.com';
+      const isBWelcome = b.id === '1' || b.fromAddress === 'no-reply@guerrillamail.com';
+      if (isAWelcome && !isBWelcome) return 1;
+      if (!isAWelcome && isBWelcome) return -1;
+
+      const diff = new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime();
+      if (diff !== 0) return diff;
+
+      const numA = Number(a.id);
+      const numB = Number(b.id);
+      if (!isNaN(numA) && !isNaN(numB)) {
+        return numB - numA;
+      }
+      return 0;
+    });
   }
 
   async getMessage(credentials, id) {
