@@ -67,7 +67,7 @@ export function MailProvider({ children }) {
   const [healthStatus, setHealthStatus] = useState(null);
   const [latencyMs, setLatencyMs] = useState(28);
 
-  const { soundEnabled, toggleSound, playNotificationSound } = useSound();
+  const { soundEnabled, toggleSound, playNotificationSound, userInteracted } = useSound();
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     try {
       const stored = localStorage.getItem('tempsumanmail_notif_enabled');
@@ -275,7 +275,7 @@ export function MailProvider({ children }) {
           newEmails.forEach(msg => knownMessageIds.current.add(msg.id));
           playNotificationSound();
           try {
-            if (typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
+            if (userInteracted?.current && typeof navigator !== 'undefined' && typeof navigator.vibrate === 'function') {
               navigator.vibrate([200, 100, 200]);
             }
           } catch (e) {}

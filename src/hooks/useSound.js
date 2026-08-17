@@ -11,9 +11,11 @@ export function useSound() {
   });
 
   const audioCtxRef = useRef(null);
+  const userInteracted = useRef(false);
 
   useEffect(() => {
-    const unlockAudio = () => {
+    const handleGesture = () => {
+      userInteracted.current = true;
       try {
         const AudioCtx = window.AudioContext || window.webkitAudioContext;
         if (AudioCtx) {
@@ -21,22 +23,27 @@ export function useSound() {
             audioCtxRef.current = new AudioCtx();
           }
           if (audioCtxRef.current.state === 'suspended') {
-            audioCtxRef.current.resume();
+            audioCtxRef.current.resume().catch(() => {});
           }
         }
       } catch (e) {}
     };
 
-    window.addEventListener('touchstart', unlockAudio, { once: true, passive: true });
-    window.addEventListener('click', unlockAudio, { once: true, passive: true });
+    window.addEventListener('pointerdown', handleGesture, { once: true, passive: true });
+    window.addEventListener('touchstart', handleGesture, { once: true, passive: true });
+    window.addEventListener('keydown', handleGesture, { once: true, passive: true });
+    window.addEventListener('click', handleGesture, { once: true, passive: true });
 
     return () => {
-      window.removeEventListener('touchstart', unlockAudio);
-      window.removeEventListener('click', unlockAudio);
+      window.removeEventListener('pointerdown', handleGesture);
+      window.removeEventListener('touchstart', handleGesture);
+      window.removeEventListener('keydown', handleGesture);
+      window.removeEventListener('click', handleGesture);
     };
   }, []);
 
   const toggleSound = useCallback(() => {
+    userInteracted.current = true;
     setSoundEnabled(prev => {
       const next = !prev;
       try {
@@ -47,7 +54,7 @@ export function useSound() {
   }, []);
 
   const playNotificationSound = useCallback(() => {
-    if (!soundEnabled) return;
+    if (!soundEnabled || !userInteracted.current) return;
     try {
       const AudioCtx = window.AudioContext || window.webkitAudioContext;
       if (!AudioCtx) return;
@@ -57,8 +64,9 @@ export function useSound() {
       }
 
       const ctx = audioCtxRef.current;
-      if (ctx.state === 'suspended') {
-        ctx.resume();
+      if (ctx.state !== 'running') {
+        ctx.resume().catch(() => {});
+        if (ctx.state !== 'running') return;
       }
 
       const osc1 = ctx.createOscillator();
@@ -89,5 +97,5 @@ export function useSound() {
     } catch (e) {}
   }, [soundEnabled]);
 
-  return { soundEnabled, toggleSound, playNotificationSound };
+  return { soundEnabled, toggleSound, playNotificationSound, userInteracted };
 }
