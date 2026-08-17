@@ -53,7 +53,7 @@ export class GuerrillaProvider extends BaseProvider {
   }
 
   async listMessages(credentials) {
-    const res = await fetch(`${this.baseUrl}?f=check_email&seq=0&sid_token=${encodeURIComponent(credentials.sidToken)}`, {
+    const res = await fetch(`${this.baseUrl}?f=get_email_list&offset=0&sid_token=${encodeURIComponent(credentials.sidToken)}`, {
       headers: { 'Accept': 'application/json' }
     });
 
@@ -75,7 +75,7 @@ export class GuerrillaProvider extends BaseProvider {
       seen: Boolean(item.mail_read === '1' || item.mail_read === 1),
       hasAttachments: Boolean(item.atts && item.atts.length > 0),
       size: item.mail_size ? parseInt(item.mail_size, 10) : 0
-    }));
+    })).sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
   }
 
   async getMessage(credentials, id) {

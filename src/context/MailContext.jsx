@@ -154,10 +154,12 @@ export function MailProvider({ children }) {
       const end = performance.now();
       setLatencyMs(Math.round(end - start));
 
-      const normalized = fetched.map(msg => ({
-        ...msg,
-        seen: Boolean(msg.seen || readMessageIds.current.has(msg.id))
-      }));
+      const normalized = fetched
+        .map(msg => ({
+          ...msg,
+          seen: Boolean(msg.seen || readMessageIds.current.has(msg.id))
+        }))
+        .sort((a, b) => new Date(b.receivedAt).getTime() - new Date(a.receivedAt).getTime());
 
       setMessages(normalized);
 
@@ -189,7 +191,7 @@ export function MailProvider({ children }) {
         }
       }
     } catch (err) {
-      if (err.message && (err.message.includes('expired') || err.message.includes('401') || err.message.includes('404') || err.message.includes('Session') || err.message.includes('Failed to fetch messages'))) {
+      if (err.message && (err.message.includes('expired') || err.message.includes('401') || err.message.includes('404') || err.message.includes('Invalid session'))) {
         setSession(null);
         setMessages([]);
         setSelectedMessage(null);
