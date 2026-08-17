@@ -21,6 +21,10 @@ export class GuerrillaProvider extends BaseProvider {
   }
 
   async createInbox(localPart, domain) {
+    if (domain && !this.domains.includes(domain)) {
+      throw new Error(`Domain ${domain} is not supported by ${this.name}`);
+    }
+
     const initRes = await fetch(`${this.baseUrl}?f=get_email_address`, {
       headers: { 'Accept': 'application/json' }
     });

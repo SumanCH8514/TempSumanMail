@@ -57,14 +57,39 @@ export class ProviderManager {
   }
 
   async createInbox(localPart, preferredDomain, preferredProvider) {
-    const candidateOrder = preferredProvider && this.providers[preferredProvider]
-      ? [preferredProvider, ...this.order.filter(p => p !== preferredProvider)]
+    let targetProvider = preferredProvider;
+
+    if (!targetProvider && preferredDomain) {
+      for (const name of this.order) {
+        const cached = this.domainCache.get(name);
+        if (cached && cached.domains.includes(preferredDomain)) {
+          targetProvider = name;
+          break;
+        }
+      }
+      if (!targetProvider) {
+        for (const name of this.order) {
+          try {
+            const provider = this.providers[name];
+            const domains = await provider.listDomains();
+            this.domainCache.set(name, { domains, timestamp: Date.now() });
+            if (domains.includes(preferredDomain)) {
+              targetProvider = name;
+              break;
+            }
+          } catch (e) {}
+        }
+      }
+    }
+
+    const candidateOrder = targetProvider && this.providers[targetProvider]
+      ? [targetProvider]
       : [...this.order];
 
     let lastError = null;
 
     for (const name of candidateOrder) {
-      if (!this.isHealthy(name) && candidateOrder.length > 1) {
+      if (!this.isHealthy(name) && candidateOrder.length > 1 && !targetProvider) {
         continue;
       }
       try {
@@ -79,6 +104,9 @@ export class ProviderManager {
       } catch (err) {
         this.recordFailure(name);
         lastError = err;
+        if (targetProvider) {
+          throw err;
+        }
       }
     }
 

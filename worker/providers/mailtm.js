@@ -25,7 +25,10 @@ export class MailTmProvider extends BaseProvider {
     if (!domains || domains.length === 0) {
       throw new Error(`No available domains on ${this.name}`);
     }
-    const selectedDomain = domain && domains.includes(domain) ? domain : domains[0];
+    if (domain && !domains.includes(domain)) {
+      throw new Error(`Domain ${domain} is not supported by ${this.name}`);
+    }
+    const selectedDomain = domain || domains[0];
     const username = localPart ? localPart.toLowerCase().replace(/[^a-z0-9_.-]/g, '') : `user_${Math.random().toString(36).substring(2, 10)}`;
     const address = `${username}@${selectedDomain}`;
     const password = `pwd_${Math.random().toString(36).substring(2, 14)}!A1`;
@@ -40,6 +43,9 @@ export class MailTmProvider extends BaseProvider {
     });
 
     if (!accountRes.ok) {
+      if (accountRes.status === 422) {
+        throw new Error(`Username "${username}" is already taken on @${selectedDomain}. Please choose another username.`);
+      }
       const err = await accountRes.text();
       throw new Error(`Account creation failed on ${this.name}: ${accountRes.status} ${err}`);
     }
