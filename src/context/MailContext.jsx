@@ -84,6 +84,55 @@ export function MailProvider({ children }) {
   const pollIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
 
+  const addToast = useCallback((message, type = 'info', duration = 3500) => {
+    const id = Math.random().toString(36).substring(2, 9);
+    setToasts(prev => [...prev, { id, message, type }]);
+    setTimeout(() => {
+      setToasts(prev => prev.filter(t => t.id !== id));
+    }, duration);
+  }, []);
+
+  const removeToast = useCallback((id) => {
+    setToasts(prev => prev.filter(t => t.id !== id));
+  }, []);
+
+  const toggleStar = useCallback((messageId) => {
+    setStarredIds(prev => {
+      const isStarred = prev.includes(messageId);
+      const next = isStarred ? prev.filter(id => id !== messageId) : [...prev, messageId];
+      try {
+        localStorage.setItem('tempsumanmail_starred', JSON.stringify(next));
+      } catch (e) {}
+      return next;
+    });
+  }, []);
+
+  const loadReadIdsForSession = useCallback((token) => {
+    if (!token) {
+      readMessageIds.current.clear();
+      return;
+    }
+    try {
+      const stored = localStorage.getItem(`tempsumanmail_read_${token}`);
+      if (stored) {
+        const arr = JSON.parse(stored);
+        readMessageIds.current = new Set(arr);
+      } else {
+        readMessageIds.current.clear();
+      }
+    } catch (e) {
+      readMessageIds.current.clear();
+    }
+  }, []);
+
+  const saveReadId = useCallback((token, id) => {
+    if (!token || !id) return;
+    readMessageIds.current.add(id);
+    try {
+      localStorage.setItem(`tempsumanmail_read_${token}`, JSON.stringify(Array.from(readMessageIds.current)));
+    } catch (e) {}
+  }, []);
+
   const toggleNotifications = useCallback(async () => {
     if (typeof Notification === 'undefined') {
       addToast('Notifications not supported in this browser', 'error');
@@ -125,55 +174,6 @@ export function MailProvider({ children }) {
     });
   }, [addToast]);
 
-  const loadReadIdsForSession = useCallback((token) => {
-    if (!token) {
-      readMessageIds.current.clear();
-      return;
-    }
-    try {
-      const stored = localStorage.getItem(`tempsumanmail_read_${token}`);
-      if (stored) {
-        const arr = JSON.parse(stored);
-        readMessageIds.current = new Set(arr);
-      } else {
-        readMessageIds.current.clear();
-      }
-    } catch (e) {
-      readMessageIds.current.clear();
-    }
-  }, []);
-
-  const saveReadId = useCallback((token, id) => {
-    if (!token || !id) return;
-    readMessageIds.current.add(id);
-    try {
-      localStorage.setItem(`tempsumanmail_read_${token}`, JSON.stringify(Array.from(readMessageIds.current)));
-    } catch (e) {}
-  }, []);
-
-  const toggleStar = useCallback((messageId) => {
-    setStarredIds(prev => {
-      const isStarred = prev.includes(messageId);
-      const next = isStarred ? prev.filter(id => id !== messageId) : [...prev, messageId];
-      try {
-        localStorage.setItem('tempsumanmail_starred', JSON.stringify(next));
-      } catch (e) {}
-      return next;
-    });
-  }, []);
-
-  const addToast = useCallback((message, type = 'info', duration = 3500) => {
-    const id = Math.random().toString(36).substring(2, 9);
-    setToasts(prev => [...prev, { id, message, type }]);
-    setTimeout(() => {
-      setToasts(prev => prev.filter(t => t.id !== id));
-    }, duration);
-  }, []);
-
-  const removeToast = useCallback((id) => {
-    setToasts(prev => prev.filter(t => t.id !== id));
-  }, []);
-
   const fetchDomains = useCallback(async () => {
     try {
       const list = await apiClient.getDomains();
@@ -194,6 +194,54 @@ export function MailProvider({ children }) {
       setHealthStatus({ healthy: false });
     }
   }, []);
+
+  const createRandomInbox = useCallback(async (preferredDomain = null, preferredProvider = null) => {
+    setLoading(true);
+    setError(null);
+    setSelectedMessage(null);
+    setMessages([]);
+    isInitialFetch.current = true;
+    knownMessageIds.current.clear();
+    readMessageIds.current.clear();
+
+    try {
+      const newSession = await apiClient.createInbox(preferredDomain, preferredProvider);
+      setSession(newSession);
+      loadReadIdsForSession(newSession.token);
+      addToast('Generated new disposable inbox', 'success');
+      return newSession;
+    } catch (err) {
+      setError(err.message);
+      addToast(`Error: ${err.message}`, 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast, loadReadIdsForSession]);
+
+  const createCustomInbox = useCallback(async (localPart, domain, preferredProvider = null) => {
+    setLoading(true);
+    setError(null);
+    setSelectedMessage(null);
+    setMessages([]);
+    isInitialFetch.current = true;
+    knownMessageIds.current.clear();
+    readMessageIds.current.clear();
+
+    try {
+      const newSession = await apiClient.createCustomInbox(localPart, domain, preferredProvider);
+      setSession(newSession);
+      loadReadIdsForSession(newSession.token);
+      addToast(`Inbox address set to ${newSession.address}`, 'success');
+      return newSession;
+    } catch (err) {
+      setError(err.message);
+      addToast(`Error: ${err.message}`, 'error');
+      throw err;
+    } finally {
+      setLoading(false);
+    }
+  }, [addToast, loadReadIdsForSession]);
 
   const fetchMessages = useCallback(async (isManual = false) => {
     if (!session?.token) return;
@@ -257,55 +305,7 @@ export function MailProvider({ children }) {
       if (isManual) setRefreshing(false);
       setPollCountdown(10);
     }
-  }, [session, playNotificationSound, addToast, notificationsEnabled]);
-
-  const createRandomInbox = useCallback(async (preferredDomain = null, preferredProvider = null) => {
-    setLoading(true);
-    setError(null);
-    setSelectedMessage(null);
-    setMessages([]);
-    isInitialFetch.current = true;
-    knownMessageIds.current.clear();
-    readMessageIds.current.clear();
-
-    try {
-      const newSession = await apiClient.createInbox(preferredDomain, preferredProvider);
-      setSession(newSession);
-      loadReadIdsForSession(newSession.token);
-      addToast('Generated new disposable inbox', 'success');
-      return newSession;
-    } catch (err) {
-      setError(err.message);
-      addToast(`Error: ${err.message}`, 'error');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast, loadReadIdsForSession]);
-
-  const createCustomInbox = useCallback(async (localPart, domain, preferredProvider = null) => {
-    setLoading(true);
-    setError(null);
-    setSelectedMessage(null);
-    setMessages([]);
-    isInitialFetch.current = true;
-    knownMessageIds.current.clear();
-    readMessageIds.current.clear();
-
-    try {
-      const newSession = await apiClient.createCustomInbox(localPart, domain, preferredProvider);
-      setSession(newSession);
-      loadReadIdsForSession(newSession.token);
-      addToast(`Inbox address set to ${newSession.address}`, 'success');
-      return newSession;
-    } catch (err) {
-      setError(err.message);
-      addToast(`Error: ${err.message}`, 'error');
-      throw err;
-    } finally {
-      setLoading(false);
-    }
-  }, [addToast, loadReadIdsForSession]);
+  }, [session, playNotificationSound, addToast, notificationsEnabled, createRandomInbox]);
 
   const deleteMessage = useCallback(async (messageId) => {
     if (!session?.token || !messageId) return;
