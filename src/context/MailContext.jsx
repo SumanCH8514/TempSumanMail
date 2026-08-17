@@ -154,6 +154,10 @@ export function MailProvider({ children }) {
       const end = performance.now();
       setLatencyMs(Math.round(end - start));
 
+      if (!Array.isArray(fetched)) {
+        return;
+      }
+
       const normalized = fetched
         .map(msg => ({
           ...msg,
