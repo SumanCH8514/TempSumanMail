@@ -9,7 +9,7 @@ export class ProviderManager {
       mailgw: new MailGwProvider(),
       guerrilla: new GuerrillaProvider()
     };
-    this.order = ['mailtm', 'mailgw', 'guerrilla'];
+    this.order = ['guerrilla', 'mailtm', 'mailgw'];
     this.failures = new Map();
     this.domainCache = new Map();
     this.domainCacheTtl = 10 * 60 * 1000;
