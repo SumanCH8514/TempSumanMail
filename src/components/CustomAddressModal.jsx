@@ -30,7 +30,7 @@ export function CustomAddressModal({ isOpen, onClose }) {
     e.preventDefault();
     setValidationError('');
 
-    const clean = (localPart || 'sumanmail').trim().toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+    const clean = (localPart || 'sumanmail').trim().toLowerCase().replace(/[^a-z0-9_.+-]/g, '');
     if (clean.length < 2) {
       setValidationError('Username must be at least 2 characters.');
       return;

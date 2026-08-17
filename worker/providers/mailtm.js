@@ -29,7 +29,7 @@ export class MailTmProvider extends BaseProvider {
       throw new Error(`Domain ${domain} is not supported by ${this.name}`);
     }
     const selectedDomain = domain || domains[0];
-    const username = localPart ? localPart.toLowerCase().replace(/[^a-z0-9_.-]/g, '') : `user_${Math.random().toString(36).substring(2, 10)}`;
+    const username = localPart ? localPart.toLowerCase().replace(/[^a-z0-9_.+-]/g, '') : `user_${Math.random().toString(36).substring(2, 10)}`;
     const address = `${username}@${selectedDomain}`;
     const password = `pwd_${Math.random().toString(36).substring(2, 14)}!A1`;
 

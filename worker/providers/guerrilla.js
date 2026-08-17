@@ -35,16 +35,21 @@ export class GuerrillaProvider extends BaseProvider {
 
     const initData = await initRes.json();
     const sidToken = initData.sid_token;
-    let finalAddress = initData.email_addr;
+    const selectedDomain = domain || this.domains[0];
+    let username = initData.mail_user || initData.email_addr?.split('@')[0] || `user_${Math.random().toString(36).substring(2, 10)}`;
 
     if (localPart) {
-      const cleanUser = localPart.toLowerCase().replace(/[^a-z0-9_.-]/g, '');
+      const cleanUser = localPart.toLowerCase().replace(/[^a-z0-9_.+-]/g, '');
       const setUserRes = await fetch(`${this.baseUrl}?f=set_email_user&email_user=${encodeURIComponent(cleanUser)}&sid_token=${encodeURIComponent(sidToken)}`);
       if (setUserRes.ok) {
         const setUserData = await setUserRes.json();
-        finalAddress = setUserData.email_addr || finalAddress;
+        username = setUserData.mail_user || cleanUser;
+      } else {
+        username = cleanUser;
       }
     }
+
+    const finalAddress = `${username}@${selectedDomain}`;
 
     return {
       address: finalAddress,
