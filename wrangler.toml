@@ -1,4 +1,4 @@
-name = "temp-suman-mail-api"
+name = "tempsumanmail-backend"
 main = "worker/index.js"
 compatibility_date = "2024-09-23"
 

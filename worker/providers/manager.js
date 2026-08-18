@@ -1,15 +1,19 @@
 import { MailTmProvider } from './mailtm.js';
 import { MailGwProvider } from './mailgw.js';
 import { GuerrillaProvider } from './guerrilla.js';
+import { InboxesProvider } from './inboxes.js';
+import { TempMailIoProvider } from './tempmailio.js';
 
 export class ProviderManager {
   constructor() {
     this.providers = {
+      guerrilla: new GuerrillaProvider(),
+      inboxes: new InboxesProvider(),
+      tempmailio: new TempMailIoProvider(),
       mailtm: new MailTmProvider(),
-      mailgw: new MailGwProvider(),
-      guerrilla: new GuerrillaProvider()
+      mailgw: new MailGwProvider()
     };
-    this.order = ['guerrilla', 'mailtm', 'mailgw'];
+    this.order = ['guerrilla', 'inboxes', 'tempmailio', 'mailtm', 'mailgw'];
     this.failures = new Map();
     this.domainCache = new Map();
     this.domainCacheTtl = 10 * 60 * 1000;

@@ -9,6 +9,7 @@ import { Footer } from './components/Footer.jsx';
 import { NotificationToast } from './components/NotificationToast.jsx';
 import { CustomAddressModal } from './components/CustomAddressModal.jsx';
 import { QrCodeModal } from './components/QrCodeModal.jsx';
+import { SettingsModal } from './components/SettingsModal.jsx';
 import { AboutUsModal } from './components/AboutUsModal.jsx';
 import { PrivacyPolicyModal } from './components/PrivacyPolicyModal.jsx';
 import { TermsModal } from './components/TermsModal.jsx';
@@ -26,6 +27,7 @@ function AppContent() {
 
   const [customModalOpen, setCustomModalOpen] = useState(false);
   const [qrModalOpen, setQrModalOpen] = useState(false);
+  const [settingsModalOpen, setSettingsModalOpen] = useState(false);
   const [aboutModalOpen, setAboutModalOpen] = useState(false);
   const [privacyModalOpen, setPrivacyModalOpen] = useState(false);
   const [termsModalOpen, setTermsModalOpen] = useState(false);
@@ -69,6 +71,7 @@ function AppContent() {
       }
       setCustomModalOpen(false);
       setQrModalOpen(false);
+      setSettingsModalOpen(false);
       setAboutModalOpen(false);
       setPrivacyModalOpen(false);
       setTermsModalOpen(false);
@@ -77,7 +80,7 @@ function AppContent() {
 
   return (
     <div className="app-container">
-      <Header />
+      <Header onOpenSettings={() => setSettingsModalOpen(true)} />
 
       <main className="main-content">
         <section className="hero-section">
@@ -92,6 +95,7 @@ function AppContent() {
           <AddressBar
             onOpenCustomize={() => setCustomModalOpen(true)}
             onOpenQr={() => setQrModalOpen(true)}
+            onOpenSettings={() => setSettingsModalOpen(true)}
           />
         </section>
 
@@ -115,6 +119,11 @@ function AppContent() {
       <QrCodeModal
         isOpen={qrModalOpen}
         onClose={() => setQrModalOpen(false)}
+      />
+
+      <SettingsModal
+        isOpen={settingsModalOpen}
+        onClose={() => setSettingsModalOpen(false)}
       />
 
       <AboutUsModal

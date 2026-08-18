@@ -1,8 +1,10 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, FileText, AlertTriangle } from 'lucide-react';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll.js';
 
 export function TermsModal({ isOpen, onClose }) {
+  useLockBodyScroll(isOpen);
   if (!isOpen) return null;
 
   return createPortal(

@@ -76,8 +76,22 @@ export const apiClient = {
     return session;
   },
 
+  messageEtags: new Map(),
+  messageCache: new Map(),
+
   async getMessages(token) {
-    const res = await fetch(`${API_BASE}/inbox/${token}/messages`);
+    const headers = {};
+    const cachedEtag = this.messageEtags.get(token);
+    if (cachedEtag) {
+      headers['If-None-Match'] = cachedEtag;
+    }
+
+    const res = await fetch(`${API_BASE}/inbox/${token}/messages`, { headers });
+
+    if (res.status === 304) {
+      return this.messageCache.get(token) || [];
+    }
+
     const data = await res.json().catch(() => ({}));
     if (!res.ok || !data.success) {
       if (res.status === 401 || res.status === 404 || data.expired) {
@@ -85,7 +99,14 @@ export const apiClient = {
       }
       throw new Error(data.error || 'Failed to fetch messages');
     }
-    return data.messages || [];
+
+    const etag = res.headers.get('ETag');
+    if (etag) {
+      this.messageEtags.set(token, etag);
+    }
+    const msgs = data.messages || [];
+    this.messageCache.set(token, msgs);
+    return msgs;
   },
 
   async getMessage(token, id) {

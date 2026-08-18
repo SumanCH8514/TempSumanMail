@@ -1,13 +1,18 @@
-import React, { useState, useEffect } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import { createPortal } from 'react-dom';
-import { X, Sparkles, AlertCircle } from 'lucide-react';
+import { X, ArrowRight, AlertCircle, ChevronDown, Check, Search, Globe } from 'lucide-react';
 import { useMail } from '../context/MailContext.jsx';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll.js';
 
 export function CustomAddressModal({ isOpen, onClose }) {
+  useLockBodyScroll(isOpen);
   const { domains, createCustomInbox, loading } = useMail();
   const [localPart, setLocalPart] = useState('sumanmail');
   const [selectedDomain, setSelectedDomain] = useState('');
   const [validationError, setValidationError] = useState('');
+  const [isDropdownOpen, setIsDropdownOpen] = useState(false);
+  const [searchTerm, setSearchTerm] = useState('');
+  const dropdownRef = useRef(null);
 
   useEffect(() => {
     if (isOpen) {
@@ -15,6 +20,8 @@ export function CustomAddressModal({ isOpen, onClose }) {
         setLocalPart('sumanmail');
       }
       setValidationError('');
+      setIsDropdownOpen(false);
+      setSearchTerm('');
     }
   }, [isOpen]);
 
@@ -24,7 +31,25 @@ export function CustomAddressModal({ isOpen, onClose }) {
     }
   }, [domains, selectedDomain]);
 
+  useEffect(() => {
+    const handleClickOutside = (e) => {
+      if (dropdownRef.current && !dropdownRef.current.contains(e.target)) {
+        setIsDropdownOpen(false);
+      }
+    };
+    if (isDropdownOpen) {
+      document.addEventListener('mousedown', handleClickOutside);
+    }
+    return () => {
+      document.removeEventListener('mousedown', handleClickOutside);
+    };
+  }, [isDropdownOpen]);
+
   if (!isOpen) return null;
+
+  const filteredDomains = (domains || []).filter(dom =>
+    dom.toLowerCase().includes(searchTerm.toLowerCase().trim())
+  );
 
   const handleSubmit = async (e) => {
     e.preventDefault();
@@ -81,19 +106,74 @@ export function CustomAddressModal({ isOpen, onClose }) {
           </div>
 
           <div className="form-group">
-            <label className="form-label" htmlFor="custom-domain">Select Domain</label>
-            <select
-              id="custom-domain"
-              className="form-select"
-              value={selectedDomain}
-              onChange={e => setSelectedDomain(e.target.value)}
-            >
-              {domains.map(dom => (
-                <option key={dom} value={dom}>
-                  @{dom}
-                </option>
-              ))}
-            </select>
+            <label className="form-label">Select Domain</label>
+            <div className="custom-domain-dropdown" ref={dropdownRef}>
+              <div
+                className={`custom-domain-trigger ${isDropdownOpen ? 'open' : ''}`}
+                onClick={() => setIsDropdownOpen(!isDropdownOpen)}
+                role="button"
+                tabIndex={0}
+                onKeyDown={e => {
+                  if (e.key === 'Enter' || e.key === ' ') {
+                    e.preventDefault();
+                    setIsDropdownOpen(!isDropdownOpen);
+                  }
+                }}
+              >
+                <div className="custom-domain-trigger-left">
+                  <Globe size={16} style={{ color: 'var(--accent-cyan)' }} />
+                  <span className="custom-domain-trigger-text">
+                    @{selectedDomain || (domains && domains[0]) || 'Loading domains...'}
+                  </span>
+                </div>
+                <ChevronDown size={17} className={`custom-domain-chevron ${isDropdownOpen ? 'open' : ''}`} />
+              </div>
+
+              {isDropdownOpen && (
+                <div className="custom-domain-menu">
+                  <div className="custom-domain-search-wrap">
+                    <Search size={14} style={{ color: 'var(--text-muted)' }} />
+                    <input
+                      type="text"
+                      className="custom-domain-search-input"
+                      placeholder="Filter domains..."
+                      value={searchTerm}
+                      onChange={e => setSearchTerm(e.target.value)}
+                      autoFocus
+                    />
+                  </div>
+
+                  <div className="custom-domain-list">
+                    {filteredDomains.length > 0 ? (
+                      filteredDomains.map(dom => {
+                        const isSelected = selectedDomain === dom;
+                        const tld = dom.split('.').pop();
+                        return (
+                          <div
+                            key={dom}
+                            className={`custom-domain-item ${isSelected ? 'selected' : ''}`}
+                            onClick={() => {
+                              setSelectedDomain(dom);
+                              setIsDropdownOpen(false);
+                            }}
+                          >
+                            <span className="custom-domain-item-text">@{dom}</span>
+                            <div style={{ display: 'flex', alignItems: 'center', gap: '0.4rem' }}>
+                              <span className="custom-domain-badge">.{tld}</span>
+                              {isSelected && <Check size={14} style={{ color: 'var(--accent-cyan)' }} />}
+                            </div>
+                          </div>
+                        );
+                      })
+                    ) : (
+                      <div className="custom-domain-empty">
+                        No domains match "{searchTerm}"
+                      </div>
+                    )}
+                  </div>
+                </div>
+              )}
+            </div>
           </div>
 
           {validationError && (
@@ -108,7 +188,7 @@ export function CustomAddressModal({ isOpen, onClose }) {
               Cancel
             </button>
             <button type="submit" className="btn-primary" disabled={loading} style={{ display: 'inline-flex', alignItems: 'center', gap: '0.4rem' }}>
-              <Sparkles size={16} />
+              <ArrowRight size={16} />
               <span>{loading ? 'Creating...' : 'Set Address'}</span>
             </button>
           </div>

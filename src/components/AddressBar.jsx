@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { Copy, Check, RefreshCw, UserCheck, QrCode, Trash2, ShieldCheck } from 'lucide-react';
+import { Copy, Check, RefreshCw, UserCheck, QrCode, Trash2, ShieldCheck, Settings } from 'lucide-react';
 import { useMail } from '../context/MailContext.jsx';
 
-export function AddressBar({ onOpenCustomize, onOpenQr }) {
+export function AddressBar({ onOpenCustomize, onOpenQr, onOpenSettings }) {
   const {
     session,
     loading,

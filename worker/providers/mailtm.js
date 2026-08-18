@@ -7,17 +7,21 @@ export class MailTmProvider extends BaseProvider {
   }
 
   async listDomains() {
-    const res = await fetch(`${this.baseUrl}/domains`, {
-      headers: { 'Accept': 'application/json' }
-    });
-    if (!res.ok) {
-      throw new Error(`Failed to fetch domains from ${this.name}: ${res.status}`);
-    }
-    const data = await res.json();
-    const domains = (data['hydra:member'] || data || [])
-      .filter(d => d.isActive !== false)
-      .map(d => d.domain);
-    return domains;
+    try {
+      const res = await fetch(`${this.baseUrl}/domains`, {
+        headers: { 'Accept': 'application/json' }
+      });
+      if (res.ok) {
+        const data = await res.json();
+        const domains = (data['hydra:member'] || data || [])
+          .filter(d => d.isActive !== false)
+          .map(d => d.domain);
+        if (domains && domains.length > 0) {
+          return domains;
+        }
+      }
+    } catch (e) {}
+    return ['emalupe.com'];
   }
 
   async createInbox(localPart, domain) {

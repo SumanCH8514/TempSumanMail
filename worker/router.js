@@ -32,6 +32,24 @@ function errorResponse(message, status = 400) {
   return jsonResponse({ success: false, error: message }, status);
 }
 
+const BRAND_FAVICON_SVG = `<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 192 192" width="192" height="192">
+  <defs>
+    <linearGradient id="bgGrad" x1="0%" y1="0%" x2="100%" y2="100%">
+      <stop offset="0%" stop-color="#4f46e5" />
+      <stop offset="50%" stop-color="#2563eb" />
+      <stop offset="100%" stop-color="#06b6d4" />
+    </linearGradient>
+    <filter id="glow" x="-20%" y="-20%" width="140%" height="140%">
+      <feDropShadow dx="0" dy="8" stdDeviation="12" flood-color="#4f46e5" flood-opacity="0.45" />
+    </filter>
+  </defs>
+  <rect width="176" height="176" x="8" y="8" rx="44" fill="url(#bgGrad)" filter="url(#glow)" />
+  <g fill="none" stroke="#ffffff" stroke-width="11" stroke-linecap="round" stroke-linejoin="round" transform="translate(36, 44)">
+    <rect x="0" y="8" width="120" height="88" rx="16" />
+    <path d="m4 16 56 42 56-42" />
+  </g>
+</svg>`;
+
 function renderHtmlGateway() {
   const html = `<!DOCTYPE html>
 <html lang="en">
@@ -39,6 +57,8 @@ function renderHtmlGateway() {
   <meta charset="UTF-8">
   <meta name="viewport" content="width=device-width, initial-scale=1.0">
   <title>TempSumanMail — Backend API Gateway</title>
+  <link rel="icon" type="image/svg+xml" href="/icon.svg">
+  <link rel="alternate icon" href="/favicon.ico">
   <link rel="preconnect" href="https://fonts.googleapis.com">
   <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
   <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@400;600;700;800&family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
@@ -114,17 +134,18 @@ function renderHtmlGateway() {
       width: 64px;
       height: 64px;
       margin: 0 auto 1.25rem;
-      border-radius: 18px;
-      background: linear-gradient(135deg, #4f46e5 0%, #06b6d4 100%);
+      border-radius: 16px;
       display: flex;
       align-items: center;
       justify-content: center;
       box-shadow: 0 10px 25px rgba(79, 70, 229, 0.4);
     }
+    .icon-box img,
     .icon-box svg {
-      width: 32px;
-      height: 32px;
-      stroke: #ffffff;
+      width: 64px;
+      height: 64px;
+      display: block;
+      border-radius: 16px;
     }
     h1 {
       font-family: 'Outfit', sans-serif;
@@ -229,9 +250,7 @@ function renderHtmlGateway() {
       API Edge Gateway Active
     </div>
     <div class="icon-box">
-      <svg xmlns="http://www.w3.org/2000/svg" fill="none" viewBox="0 0 24 24" stroke-width="2" stroke-linecap="round" stroke-linejoin="round">
-        <rect width="18" height="18" x="3" y="3" rx="2"/><path d="m9 12 2 2 4-4"/>
-      </svg>
+      <img src="/icon.svg" alt="TempSumanMail Favicon" width="64" height="64" />
     </div>
     <h1>TempSumanMail API</h1>
     <p>Direct browser access to this API endpoint is restricted. Automated programmatic edge requests only.</p>
@@ -287,6 +306,17 @@ export async function handleRequest(request, env) {
   const method = request.method;
   const store = getSessionStore(env);
   const acceptHeader = request.headers.get('Accept') || '';
+
+  if (path === '/favicon.ico' || path === '/icon.svg') {
+    return new Response(BRAND_FAVICON_SVG, {
+      status: 200,
+      headers: {
+        ...corsHeaders,
+        'Content-Type': 'image/svg+xml; charset=utf-8',
+        'Cache-Control': 'public, max-age=31536000, immutable'
+      }
+    });
+  }
 
   if (path === '/' || path === '') {
     if (acceptHeader.includes('text/html')) {
@@ -402,12 +432,34 @@ export async function handleRequest(request, env) {
           return jsonResponse({ success: false, error: 'Provider unavailable', expired: true }, 401);
         }
         const messages = await provider.listMessages(session.credentials);
+        const msgSummary = (messages || []).map(m => `${m.id}-${m.seen}`).join('|');
+        const etag = `W/"${messages?.length || 0}-${msgSummary.length}-${msgSummary.slice(0, 32)}"`;
+        const ifNoneMatch = request.headers.get('if-none-match');
 
-        return jsonResponse({
+        if (ifNoneMatch && ifNoneMatch === etag) {
+          return new Response(null, {
+            status: 304,
+            headers: {
+              ...corsHeaders,
+              'ETag': etag,
+              'Cache-Control': 'no-cache'
+            }
+          });
+        }
+
+        return new Response(JSON.stringify({
           success: true,
           address: session.address,
           provider: session.provider,
           messages
+        }), {
+          status: 200,
+          headers: {
+            ...corsHeaders,
+            'Content-Type': 'application/json;charset=UTF-8',
+            'ETag': etag,
+            'Cache-Control': 'no-cache'
+          }
         });
       } catch (err) {
         if (err.status === 401 || err.message?.includes('expired') || err.message?.includes('401') || err.message?.includes('unauthorized')) {

@@ -1,10 +1,10 @@
 import React, { useState } from 'react';
-import { Mail, Sun, Moon, Volume2, VolumeX, Bell, BellOff, Keyboard } from 'lucide-react';
+import { Mail, Sun, Moon, Volume2, VolumeX, Bell, BellOff, Keyboard, Settings } from 'lucide-react';
 import { useTheme } from '../context/ThemeContext.jsx';
 import { useMail } from '../context/MailContext.jsx';
 import { ShortcutsModal } from './ShortcutsModal.jsx';
 
-export function Header() {
+export function Header({ onOpenSettings }) {
   const { theme, toggleTheme } = useTheme();
   const { soundEnabled, toggleSound, notificationsEnabled, toggleNotifications, session, latencyMs } = useMail();
   const [shortcutsOpen, setShortcutsOpen] = useState(false);
@@ -15,9 +15,7 @@ export function Header() {
     <header className="site-header">
       <div className="header-inner">
         <div className="brand-wrapper">
-          <div className="brand-icon">
-            <Mail size={18} strokeWidth={2.5} />
-          </div>
+          <img src="/icon.svg" alt="TempSumanMail Logo" className="brand-logo-img" width="38" height="38" />
           <div className="brand-text-col">
             <div className="brand-title-row">
               <h1 className="brand-title">
@@ -72,6 +70,15 @@ export function Header() {
             aria-label="Toggle Theme"
           >
             {theme === 'dark' ? <Sun size={17} /> : <Moon size={17} />}
+          </button>
+
+          <button
+            className="icon-btn header-btn-settings"
+            onClick={onOpenSettings}
+            title="Preferences & Alerts"
+            aria-label="Settings"
+          >
+            <Settings size={17} />
           </button>
         </div>
       </div>

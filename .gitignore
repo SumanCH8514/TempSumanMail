@@ -9,3 +9,4 @@ dist-ssr
 .dev.vars
 instructions.md
 PRD-Temp-Mail-WebApp.md
+scripts/*

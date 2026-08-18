@@ -8,11 +8,15 @@ export class GuerrillaProvider extends BaseProvider {
       'guerrillamail.com',
       'guerrillamail.net',
       'guerrillamail.org',
+      'guerrillamail.biz',
+      'guerrillamail.info',
+      'guerrillamail.de',
       'guerrillamailblock.com',
       'sharklasers.com',
       'grr.la',
       'pokemail.net',
-      'spam4.me'
+      'spam4.me',
+      'bccto.me'
     ];
   }
 

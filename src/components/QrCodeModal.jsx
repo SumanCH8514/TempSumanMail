@@ -3,8 +3,10 @@ import { createPortal } from 'react-dom';
 import QRCode from 'qrcode';
 import { X, QrCode as QrIcon } from 'lucide-react';
 import { useMail } from '../context/MailContext.jsx';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll.js';
 
 export function QrCodeModal({ isOpen, onClose }) {
+  useLockBodyScroll(isOpen);
   const { session } = useMail();
   const [qrDataUrl, setQrDataUrl] = useState('');
 

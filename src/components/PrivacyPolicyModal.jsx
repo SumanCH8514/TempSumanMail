@@ -1,8 +1,10 @@
 import React from 'react';
 import { createPortal } from 'react-dom';
 import { X, ShieldAlert, Lock, CheckCircle2 } from 'lucide-react';
+import { useLockBodyScroll } from '../hooks/useLockBodyScroll.js';
 
 export function PrivacyPolicyModal({ isOpen, onClose }) {
+  useLockBodyScroll(isOpen);
   if (!isOpen) return null;
 
   return createPortal(

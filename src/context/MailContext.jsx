@@ -13,7 +13,8 @@ const sendSystemNotification = async (title, options, isEnabled = true) => {
     ...options,
     icon: '/icon.svg',
     badge: '/icon.svg',
-    vibrate: [200, 100, 200],
+    silent: false,
+    vibrate: [300, 150, 300, 150, 300],
     renotify: true,
     requireInteraction: false
   };
@@ -22,15 +23,16 @@ const sendSystemNotification = async (title, options, isEnabled = true) => {
     try {
       const reg = await navigator.serviceWorker.ready;
       if (reg) {
+        if (typeof reg.showNotification === 'function') {
+          await reg.showNotification(title, fullOptions);
+          return;
+        }
         if (reg.active) {
           reg.active.postMessage({
             type: 'SHOW_NOTIFICATION',
             title,
             options: fullOptions
           });
-        }
-        if (typeof reg.showNotification === 'function') {
-          await reg.showNotification(title, fullOptions);
           return;
         }
       }
@@ -67,7 +69,15 @@ export function MailProvider({ children }) {
   const [healthStatus, setHealthStatus] = useState(null);
   const [latencyMs, setLatencyMs] = useState(28);
 
-  const { soundEnabled, toggleSound, playNotificationSound, userInteracted } = useSound();
+  const {
+    soundEnabled,
+    soundType,
+    toggleSound,
+    setSoundType,
+    previewSound,
+    playNotificationSound,
+    userInteracted
+  } = useSound();
   const [notificationsEnabled, setNotificationsEnabled] = useState(() => {
     try {
       const stored = localStorage.getItem('tempsumanmail_notif_enabled');
@@ -80,7 +90,7 @@ export function MailProvider({ children }) {
 
   const knownMessageIds = useRef(new Set());
   const readMessageIds = useRef(new Set());
-  const isInitialFetch = useRef(true);
+  const initializedSessions = useRef(new Set());
   const pollIntervalRef = useRef(null);
   const countdownIntervalRef = useRef(null);
 
@@ -200,7 +210,6 @@ export function MailProvider({ children }) {
     setError(null);
     setSelectedMessage(null);
     setMessages([]);
-    isInitialFetch.current = true;
     knownMessageIds.current.clear();
     readMessageIds.current.clear();
 
@@ -224,7 +233,6 @@ export function MailProvider({ children }) {
     setError(null);
     setSelectedMessage(null);
     setMessages([]);
-    isInitialFetch.current = true;
     knownMessageIds.current.clear();
     readMessageIds.current.clear();
 
@@ -281,8 +289,10 @@ export function MailProvider({ children }) {
 
       setMessages(normalized);
 
-      if (isInitialFetch.current) {
-        isInitialFetch.current = false;
+      const isFirstLoad = !initializedSessions.current.has(session.token);
+
+      if (isFirstLoad) {
+        initializedSessions.current.add(session.token);
         fetched.forEach(msg => knownMessageIds.current.add(msg.id));
       } else {
         const newEmails = fetched.filter(msg => !knownMessageIds.current.has(msg.id));
@@ -479,10 +489,13 @@ export function MailProvider({ children }) {
         toasts,
         pollCountdown,
         soundEnabled,
+        soundType,
         notificationsEnabled,
         healthStatus,
         latencyMs,
         toggleSound,
+        setSoundType,
+        previewSound,
         toggleNotifications,
         toggleStar,
         addToast,
